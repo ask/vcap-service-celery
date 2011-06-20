@@ -2,7 +2,7 @@
 local_db: sqlite3:/var/vcap/services/celery/celery_node.db
 base_dir: /var/vcap/services/celery/
 celeryctl: celeryctl
-celeryd: celeryd
+celeryd: celeryd-multi
 mbus: nats://localhost:4222
 log_level: DEBUG
 local_ip: 127.0.0.1

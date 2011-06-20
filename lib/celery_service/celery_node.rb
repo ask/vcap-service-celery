@@ -26,9 +26,6 @@ class VCAP::Services::Celery::Node
   class ProvisionedService
     include DataMapper::Resource
     property :name,            String,      :key => true
-    property :vhost,           String,      :required => true
-    property :admin_username,  String,      :required => true
-    property :admin_password,  String,      :required => true
     property :plan,            Enum[:free], :required => true
     property :plan_option,     String,      :required => false
     property :memory,          Integer,     :required => true
@@ -75,8 +72,8 @@ class VCAP::Services::Celery::Node
 
     save_provisioned_service(service)
 
-    start_worker(service.name)
 
+    @logger.info("Provisioning service #{service.name}")
     response = {
        "name" => service.name,
        "hostname" => @local_ip,
@@ -102,11 +99,13 @@ class VCAP::Services::Celery::Node
   end
 
   def bind(service_id, binding_options = :all)
+    @logger.info("Binding service #{service_id}")
     handle = {}
     service = get_provisioned_service(service_id)
+    start_worker_node(service.name)
+    handle["name"] = service.name
+    handle["service_id"] = service_id
     handle["hostname"] = @local_ip
-    handle["user"] = "u" + generate_credential
-    handle["pass"] = "p" + generate_credential
     handle
   rescue => e
     @logger.warn(e)
@@ -114,7 +113,8 @@ class VCAP::Services::Celery::Node
   end
 
   def unbind(handle)
-    true
+    service = get_provisioned_service(handle["service_id"])
+    stop_worker_node(service.name)
   rescue => e
     @logger.warn(e)
     nil
@@ -134,8 +134,14 @@ class VCAP::Services::Celery::Node
     provisioned_service
   end
 
-  def start_worker(name)
-    %x[#{@celeryd} -n #{name} -- broker.host=localhost]
+  def start_worker_node(name)
+    @logger.info("Starting worker node: #{name}...")
+    %x[#{@celeryd} start #{name} --prefix=' ' -- broker.host=localhost]
+  end
+
+  def stop_worker_node(name)
+    @logger.info("Stopping worker node: #{name}...")
+    %x[#{@celeryd} stop #{name}]
   end
 
   def generate_credential(length = 12)
