@@ -1,0 +1,13 @@
+---
+#cloud_controller: api.vcap.me
+service:
+  name: celery
+  version: "2.3"
+  description: 'Celery task queue'
+  plans: ['free']
+  tags: ['celery', 'celery-2.2', 'task-queue', 'job-queue']
+host: localhost
+token: "0xdeadbeef"
+log_level: DEBUG
+mbus: nats://localhost:4222
+pid: /var/vcap/sys/run/celery_gateway.pid
